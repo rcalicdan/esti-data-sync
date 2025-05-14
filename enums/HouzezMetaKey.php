@@ -10,7 +10,7 @@ enum HouzezMetaKey: string
 
         // Price
     case PRICE = 'fave_property_price';
-    case SECOND_PRICE = 'fave_second_price';
+    case SECOND_PRICE = 'fave_property_sec_price';
     case PRICE_PREFIX = 'fave_property_price_prefix';
     case PRICE_POSTFIX = 'fave_property_price_postfix';
     case PRICE_PER_SQFT = 'fave_property_price_per_sqft';
