@@ -1,5 +1,7 @@
 <?php  
-
+if (!defined('ABSPATH')) {
+    exit;
+}
 class Esti_Data_Mapper
 {
     private array $dictionary_data;

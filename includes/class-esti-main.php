@@ -14,15 +14,15 @@ class Esti_Main
     private const RESULT_MESSAGES = 'messages';
     private const DEFAULT_ITEMS_TO_PROCESS = 2;
     private const TRANSIENT_RESULTS_KEY = 'esti_sync_results';
-    private const TRANSIENT_EXPIRATION = 60; 
-  
+    private const TRANSIENT_EXPIRATION = 60;
+
     private const SYNC_STATUS_SKIPPED = 'skipped';
 
     private Esti_Data_Reader $dataReader;
-    private Esti_Data_Mapper $dataMapper; 
+    private Esti_Data_Mapper $dataMapper;
     private Esti_Post_Manager $postManager;
     private Esti_Admin_Page $adminPage;
-    private array $property_dictionary_data = []; 
+    private array $property_dictionary_data = [];
 
     /**
      * Initialize the plugin
@@ -31,21 +31,22 @@ class Esti_Main
      */
     public function init(): void
     {
-        $this->load_property_dictionary(); 
+        $this->load_property_dictionary();
         $this->loadDependencies();
         $this->instantiateObjects();
         $this->registerHooks();
     }
 
-     /**
+    /**
      * Loads and decodes the property data dictionary from a local JSON file.
      */
-    private function load_property_dictionary(): void {
+    private function load_property_dictionary(): void
+    {
         $dictionary_file_path = ESTI_SYNC_PLUGIN_PATH . 'data/dictionary.json';
 
         if (!file_exists($dictionary_file_path)) {
             error_log('Esti Sync Error: Dictionary file not found at ' . $dictionary_file_path);
-            $this->property_dictionary_data = []; 
+            $this->property_dictionary_data = [];
             return;
         }
 
@@ -88,7 +89,14 @@ class Esti_Main
      */
     private function loadDependencies(): void
     {
-        // Ensure WordPress image handling functions are available
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/DictionaryKey.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzesMetaKey.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzesTaxonomy.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzesWpEntity.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/JsonFeedCode.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/PostManagerMetaKeys.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/SyncStatus.php';
+
         if (!function_exists('media_handle_upload')) {
             require_once ABSPATH . 'wp-admin/includes/image.php';
             require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -227,7 +235,7 @@ class Esti_Main
         // Ensure Post Manager is available
         if (!$this->postManager) {
             $results[self::RESULT_MESSAGES][] = __('Error: Post Manager not initialized.', 'esti-data-sync');
-            $results[self::RESULT_ERROR] = count($dataItems); 
+            $results[self::RESULT_ERROR] = count($dataItems);
             return $results;
         }
 
