@@ -10,6 +10,7 @@ enum HouzezMetaKey: string
 
         // Price
     case PRICE = 'fave_property_price';
+    case SECOND_PRICE = 'fave_second_price';
     case PRICE_PREFIX = 'fave_property_price_prefix';
     case PRICE_POSTFIX = 'fave_property_price_postfix';
     case PRICE_PER_SQFT = 'fave_property_price_per_sqft';
@@ -18,6 +19,7 @@ enum HouzezMetaKey: string
 
         // Size & Area
     case SIZE = 'fave_property_size';
+    case SIZE_PREFIX = 'fave_property_size_prefix';
     case SIZE_POSTFIX = 'fave_property_size_postfix';
     case LAND_AREA = 'fave_property_land';
     case LAND_AREA_POSTFIX = 'fave_property_land_postfix';

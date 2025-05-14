@@ -1,4 +1,4 @@
-<?php  
+<?php
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -92,18 +92,18 @@ class Esti_Data_Mapper
             $currency_symbol = $this->_get_dict_value(DictionaryKey::CURRENCY, $item_data['currencyId']);
             if ($currency_symbol) {
                 $mapped['meta_input'][HouzezMetaKey::CURRENCY->value] = $currency_symbol;
-                // $mapped['meta_input'][HouzezMetaKey::PRICE_POSTFIX->value] = $currency_symbol; // Or for rental '/month'
+                // $mapped['meta_input'][HouzezMetaKey::PRICE_PRESIZE_PREFIX->value] = $currency_symbol; // Or for rental '/month'
             }
         }
         if (isset($item_data['pricePermeter'])) {
-            $mapped['meta_input'][HouzezMetaKey::PRICE_PER_SQFT->value] = $this->_s_price($item_data['pricePermeter']);
-            $mapped['meta_input'][HouzezMetaKey::PRICE_PER_SQFT_POSTFIX->value] = '/m²'; // Or from settings
+            $mapped['meta_input'][HouzezMetaKey::SECOND_PRICE->value] = $this->_s_price($item_data['pricePermeter']);
+            $mapped['meta_input'][HouzezMetaKey::PRICE_PREFIX->value] = '/m²';
         }
 
         // Size & Area
         if (isset($item_data['areaTotal'])) {
             $mapped['meta_input'][HouzezMetaKey::SIZE->value] = $this->_s_text($item_data['areaTotal']);
-            $mapped['meta_input'][HouzezMetaKey::SIZE_POSTFIX->value] = 'm²';
+            $mapped['meta_input'][HouzezMetaKey::SIZE_PREFIX->value] = 'm²';
         }
         if (isset($item_data['areaPlot'])) {
             $mapped['meta_input'][HouzezMetaKey::LAND_AREA->value] = $this->_s_text($item_data['areaPlot']);
@@ -142,11 +142,11 @@ class Esti_Data_Mapper
         } else {
             $mapped['meta_input'][HouzezMetaKey::MAP_ENABLED->value] = '0';
         }
-        
+
         if (isset($item_data['isFeatured']) && $item_data['isFeatured'] == 1) {
-           $mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value] = '1';
+            $mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value] = '1';
         } else {
-           $mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value] = '0';
+            $mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value] = '0';
         }
 
         $this->_map_additional_features_meta($mapped, $item_data);
@@ -189,7 +189,7 @@ class Esti_Data_Mapper
                 $property_features_terms[] = $heating_term;
             }
         }
-        
+
         if (isset($item_data['kitchenTypeId'])) {
             $kitchen_term = $this->_get_dict_value(DictionaryKey::KITCHEN_TYPES, $item_data['kitchenTypeId']);
             if ($kitchen_term) {
@@ -205,7 +205,7 @@ class Esti_Data_Mapper
                 }
             }
         }
-        
+
         // Example for binary features (Tak/Nie)
         if (isset($item_data['hasBalconyId']) && $this->_get_dict_value(DictionaryKey::BINARY, $item_data['hasBalconyId']) === 'Tak') {
             $property_features_terms[] = __('Balcony', 'your-text-domain');
@@ -230,7 +230,7 @@ class Esti_Data_Mapper
                 $mapped['tax_input'][HouzezTaxonomy::TYPE->value] = $type_name;
             }
         } elseif (! empty($item_data['typeName'])) {
-             $mapped['tax_input'][HouzezTaxonomy::TYPE->value] = $this->_s_text($item_data['typeName']);
+            $mapped['tax_input'][HouzezTaxonomy::TYPE->value] = $this->_s_text($item_data['typeName']);
         }
 
         if (! empty($item_data['locationCityName'])) {
@@ -249,7 +249,7 @@ class Esti_Data_Mapper
         if (isset($item_data['transaction'])) {
             $status_term = $this->_get_transaction_status_term((int) $item_data['transaction']);
             if ($status_term !== 'Unknown') {
-                 $mapped['tax_input'][HouzezTaxonomy::STATUS->value] = $status_term;
+                $mapped['tax_input'][HouzezTaxonomy::STATUS->value] = $status_term;
             }
         }
 
@@ -290,9 +290,9 @@ class Esti_Data_Mapper
                 $labels[] = $market_name;
             }
         }
-        
+
         if (isset($item_data['isFeatured']) && $item_data['isFeatured'] == 1) {
-           $labels[] = 'Featured';
+            $labels[] = 'Featured';
         }
 
         return array_unique($labels);
