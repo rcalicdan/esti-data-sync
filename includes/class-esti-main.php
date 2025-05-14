@@ -90,9 +90,9 @@ class Esti_Main
     private function loadDependencies(): void
     {
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/DictionaryKey.php';
-        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzesMetaKey.php';
-        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzesTaxonomy.php';
-        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzesWpEntity.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzezMetaKey.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzezTaxonomy.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'enums/HouzezWpEntity.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/JsonFeedCode.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/PostManagerMetaKeys.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/SyncStatus.php';
