@@ -97,7 +97,7 @@ class Esti_Data_Mapper
         }
         if (isset($item_data['pricePermeter'])) {
             $mapped['meta_input'][HouzezMetaKey::SECOND_PRICE->value] = $this->_s_price($item_data['pricePermeter']);
-            $mapped['meta_input'][HouzezMetaKey::PRICE_PREFIX->value] = '/m²';
+            $mapped['meta_input'][HouzezMetaKey::LAND_AREA_POSTFIX->value] = '/m²';
         }
 
         // Size & Area
