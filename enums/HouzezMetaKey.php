@@ -30,6 +30,8 @@ enum HouzezMetaKey: string
     case RESTROOMS = 'fave_property_restrooms';
     case YEAR_BUILT = 'fave_property_year_built';
     case FLOOR_NO = 'fave_property_floor_no';
+    case GARAGE_NUMBER = 'fave_property_garage';
+    case TOTAL_FLOORS = 'fave_property_total_floors';
 
         // Location & Map
     case LOCATION_COORDS = 'fave_property_location';

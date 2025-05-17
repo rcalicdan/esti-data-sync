@@ -129,6 +129,12 @@ class Esti_Data_Mapper
         if (isset($item_data['apartmentFloor'])) {
             $mapped['meta_input'][HouzezMetaKey::FLOOR_NO->value] = $this->_s_int($item_data['apartmentFloor']);
         }
+        if (isset($item_data['additionalGarage']) && is_numeric($item_data['additionalGarage']) && $item_data['additionalGarage'] > 0) {
+            $mapped['meta_input'][HouzezMetaKey::GARAGE_NUMBER->value] = $this->_s_int($item_data['additionalGarage']);
+        }
+        if (isset($item_data['buildingFloornumber'])) {
+            $mapped['meta_input'][HouzezMetaKey::TOTAL_FLOORS->value] = $this->_s_int($item_data['buildingFloornumber']);
+        }
 
         // Location & Map
         $this->_map_address_meta($mapped, $item_data);
