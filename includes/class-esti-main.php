@@ -46,7 +46,6 @@ class Esti_Main
         $dictionary_file_path = ESTI_SYNC_PLUGIN_PATH . 'data/dictionary.json';
 
         if (!file_exists($dictionary_file_path)) {
-            error_log('Esti Sync Error: Dictionary file not found at ' . $dictionary_file_path);
             $this->property_dictionary_data = [];
             return;
         }
@@ -54,13 +53,11 @@ class Esti_Main
         $dictionary_json_string = file_get_contents($dictionary_file_path);
 
         if ($dictionary_json_string === false) {
-            error_log('Esti Sync Error: Failed to read dictionary file at ' . $dictionary_file_path);
             $this->property_dictionary_data = [];
             return;
         }
 
         if (empty($dictionary_json_string)) {
-            error_log('Esti Sync Error: Dictionary JSON file is empty at ' . $dictionary_file_path);
             $this->property_dictionary_data = [];
             return;
         }
@@ -68,16 +65,13 @@ class Esti_Main
         $decoded_json = json_decode($dictionary_json_string, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log('Esti Sync Error: Failed to decode dictionary JSON from file ' . $dictionary_file_path . '. Error: ' . json_last_error_msg());
             $this->property_dictionary_data = [];
             return;
         }
 
         if (isset($decoded_json['success']) && $decoded_json['success'] === true && isset($decoded_json['data']) && is_array($decoded_json['data'])) {
             $this->property_dictionary_data = $decoded_json['data'];
-            error_log('Esti Sync: Property dictionary loaded successfully from ' . $dictionary_file_path);
         } else {
-            error_log('Esti Sync Error: Dictionary JSON from file ' . $dictionary_file_path . ' is not in the expected format, "success" is not true, or "data" key is missing/not an array.');
             $this->property_dictionary_data = [];
         }
     }
@@ -117,7 +111,6 @@ class Esti_Main
         $this->wordPressService = new Esti_WordPress_Service();
 
         if (empty($this->property_dictionary_data)) {
-            error_log('Esti Sync Critical Error: Property dictionary not loaded. Mapper cannot be instantiated.');
             $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data);
         } else {
             $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data);
@@ -259,35 +252,61 @@ class Esti_Main
         // Check if using SyncStatus Enum from PostManager
         $skipped_status_value = defined('SyncStatus::class') ? SyncStatus::SKIPPED->value : self::SYNC_STATUS_SKIPPED;
 
-        if (is_wp_error($syncResult)) {
-            $results[self::RESULT_ERROR]++;
-            $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Error syncing item ID %1$s: %2$s', 'esti-data-sync'),
-                esc_html($itemId),
-                esc_html($syncResult->get_error_message())
-            );
-        } elseif ($syncResult === $skipped_status_value) {
-            $results[self::RESULT_SKIPPED]++;
-            $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Item ID %s skipped.', 'esti-data-sync'),
-                esc_html($itemId)
-            );
-        } elseif (is_int($syncResult) && $syncResult > 0) {
-            $results[self::RESULT_SUCCESS]++;
-            $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Successfully synced item ID %1$s to post ID %2$s.', 'esti-data-sync'),
-                esc_html($itemId),
-                esc_html($syncResult)
-            );
-        } else {
-            // Catch-all for unexpected result types from sync_property
-            $results[self::RESULT_ERROR]++;
-            $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Unknown error or unexpected result for item ID %s.', 'esti-data-sync'),
-                esc_html($itemId)
-            );
-            error_log('Esti Sync: Unexpected sync result for item ID ' . $itemId . ': ' . print_r($syncResult, true));
-        }
+        $resultType = match (true) {
+            is_wp_error($syncResult) => 'error',
+            $syncResult === $skipped_status_value => 'skipped',
+            is_int($syncResult) && $syncResult > 0 => 'success',
+            default => 'unknown'
+        };
+
+        $results = match ($resultType) {
+            'error' => [
+                ...$results,
+                self::RESULT_ERROR => $results[self::RESULT_ERROR] + 1,
+                self::RESULT_MESSAGES => [
+                    ...$results[self::RESULT_MESSAGES],
+                    sprintf(
+                        __('Error syncing item ID %1$s: %2$s', 'esti-data-sync'),
+                        esc_html($itemId),
+                        esc_html($syncResult->get_error_message())
+                    )
+                ]
+            ],
+            'skipped' => [
+                ...$results,
+                self::RESULT_SKIPPED => $results[self::RESULT_SKIPPED] + 1,
+                self::RESULT_MESSAGES => [
+                    ...$results[self::RESULT_MESSAGES],
+                    sprintf(
+                        __('Item ID %s skipped.', 'esti-data-sync'),
+                        esc_html($itemId)
+                    )
+                ]
+            ],
+            'success' => [
+                ...$results,
+                self::RESULT_SUCCESS => $results[self::RESULT_SUCCESS] + 1,
+                self::RESULT_MESSAGES => [
+                    ...$results[self::RESULT_MESSAGES],
+                    sprintf(
+                        __('Successfully synced item ID %1$s to post ID %2$s.', 'esti-data-sync'),
+                        esc_html($itemId),
+                        esc_html($syncResult)
+                    )
+                ]
+            ],
+            'unknown' => [
+                ...$results,
+                self::RESULT_ERROR => $results[self::RESULT_ERROR] + 1,
+                self::RESULT_MESSAGES => [
+                    ...$results[self::RESULT_MESSAGES],
+                    sprintf(
+                        __('Unknown error or unexpected result for item ID %s.', 'esti-data-sync'),
+                        esc_html($itemId)
+                    )
+                ]
+            ]
+        };
 
         return $results;
     }

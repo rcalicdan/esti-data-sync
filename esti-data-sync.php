@@ -7,9 +7,6 @@
  * Version: 1.0.0
  * Author: Reymart A. Calicdan
  * Author URI: https://esti.toniemoje.pl/
- * License: GPL-2.0+
- * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain: esti-data-sync
  */
 
 if (! defined('ABSPATH')) {

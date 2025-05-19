@@ -5,9 +5,6 @@ if (! defined('ABSPATH')) {
 
 class Esti_Data_Reader
 {
-
-    private const LOG_PREFIX = 'Esti Sync: ';
-
     private string $file_path;
 
     public function __construct(string $file_path)
@@ -44,38 +41,24 @@ class Esti_Data_Reader
     private function load_and_decode_json_file(): ?array
     {
         if (! file_exists($this->file_path)) {
-            $this->log_error("Data file not found at {$this->file_path}");
             return null;
         }
 
         $json_content = file_get_contents($this->file_path);
         if ($json_content === false) {
-            $this->log_error("Could not read data file at {$this->file_path}");
             return null;
         }
 
-        $decoded_data = json_decode($json_content, true); 
+        $decoded_data = json_decode($json_content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->log_error("JSON decode error: " . json_last_error_msg() . " for file {$this->file_path}");
             return null;
         }
 
         if (! isset($decoded_data['data']) || ! is_array($decoded_data['data'])) {
-            $this->log_error("JSON 'data' key not found or is not an array in file {$this->file_path}.");
             return null;
         }
 
         return $decoded_data['data'];
-    }
-
-    /**
-     * Logs an error message with a consistent prefix.
-     *
-     * @param string $message The error message.
-     */
-    private function log_error(string $message): void
-    {
-        error_log(self::LOG_PREFIX . $message);
     }
 }

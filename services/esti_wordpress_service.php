@@ -172,7 +172,7 @@ class Esti_WordPress_Service
      */
     public function getAttachedFile(int $attachment_id, bool $unfiltered = false)
     {
-        $this->ensureMediaFunctionsExist(); // May be needed for filters or if called in certain contexts
+        $this->ensureMediaFunctionsExist(); 
         return get_attached_file($attachment_id, $unfiltered);
     }
 
