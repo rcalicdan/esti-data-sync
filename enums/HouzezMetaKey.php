@@ -44,12 +44,12 @@ enum HouzezMetaKey: string
 
         // Agents
     case AGENT_DISPLAY_OPTION = 'fave_agent_display_option';
-    case AGENTS = 'fave_agents'; 
+    case AGENTS = 'fave_agents';
 
         // Other Houzez specific
     case VIDEO_IMAGE = 'fave_video_image';
-    case HOMESLIDER = 'fave_prop_homeslider'; 
-    case PAYMENT_STATUS = 'fave_payment_status'; 
+    case HOMESLIDER = 'fave_prop_homeslider';
+    case PAYMENT_STATUS = 'fave_payment_status';
     case ENERGY_CLASS = 'fave_energy_class';
 
         // Your custom or less common
