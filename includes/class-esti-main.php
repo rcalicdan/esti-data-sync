@@ -21,6 +21,7 @@ class Esti_Main
     private Esti_Data_Reader $dataReader;
     private Esti_Data_Mapper $dataMapper;
     private Esti_Post_Manager $postManager;
+    private Esti_WordPress_Service $wordPressService;
     private Esti_Admin_Page $adminPage;
     private array $property_dictionary_data = [];
 
@@ -96,6 +97,7 @@ class Esti_Main
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/JsonFeedCode.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/PostManagerMetaKeys.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/SyncStatus.php';
+        require_once ESTI_SYNC_DATA_FILE . 'services/esti_wordpress_service.php';
 
         if (!function_exists('media_handle_upload')) {
             require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -111,16 +113,17 @@ class Esti_Main
      */
     private function instantiateObjects(): void
     {
-        $this->dataReader = new Esti_Data_Reader(ESTI_SYNC_DATA_FILE); 
+        $this->dataReader = new Esti_Data_Reader(ESTI_SYNC_DATA_FILE);
+        $this->wordPressService = new Esti_WordPress_Service();
 
         if (empty($this->property_dictionary_data)) {
             error_log('Esti Sync Critical Error: Property dictionary not loaded. Mapper cannot be instantiated.');
-            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data); 
+            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data);
         } else {
-            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data); 
+            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data);
         }
 
-        $this->postManager = new Esti_Post_Manager($this->dataMapper); 
+        $this->postManager = new Esti_Post_Manager($this->dataMapper, $this->wordPressService);
         $this->adminPage = new Esti_Admin_Page();
     }
 
@@ -208,7 +211,6 @@ class Esti_Main
             return $results;
         }
 
-        // Ensure Post Manager is available
         if (!$this->postManager) {
             $results[self::RESULT_MESSAGES][] = __('Error: Post Manager not initialized.', 'esti-data-sync');
             $results[self::RESULT_ERROR] = count($dataItems);
@@ -260,20 +262,20 @@ class Esti_Main
         if (is_wp_error($syncResult)) {
             $results[self::RESULT_ERROR]++;
             $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Error syncing item ID %1$s: %2$s', 'esti-data-sync'), 
+                __('Error syncing item ID %1$s: %2$s', 'esti-data-sync'),
                 esc_html($itemId),
                 esc_html($syncResult->get_error_message())
             );
-        } elseif ($syncResult === $skipped_status_value) { 
+        } elseif ($syncResult === $skipped_status_value) {
             $results[self::RESULT_SKIPPED]++;
             $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Item ID %s skipped.', 'esti-data-sync'), 
+                __('Item ID %s skipped.', 'esti-data-sync'),
                 esc_html($itemId)
             );
-        } elseif (is_int($syncResult) && $syncResult > 0) { 
+        } elseif (is_int($syncResult) && $syncResult > 0) {
             $results[self::RESULT_SUCCESS]++;
             $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Successfully synced item ID %1$s to post ID %2$s.', 'esti-data-sync'), 
+                __('Successfully synced item ID %1$s to post ID %2$s.', 'esti-data-sync'),
                 esc_html($itemId),
                 esc_html($syncResult)
             );

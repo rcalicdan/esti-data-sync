@@ -1,16 +1,19 @@
-<?php 
+<?php
 if (!defined('ABSPATH')) {
     exit;
 }
 enum DictionaryKey: string
 {
-    case CURRENCY = 'currency';
-    case TRANSACTION = 'transaction';
+    case CURRENCY = 'currency'; 
+    case BUILDING_CONDITION = 'building_condition';
+    case HEATING = 'heating';
+    case KITCHEN_TYPES = 'kitchen_types';
+    case APARTMENT_EQUIPMENTS = 'apartment_equipments';
+    case BINARY = 'binary'; 
     case TYPES = 'types';
     case MARKET = 'market';
-    case HEATING = 'heating';
-    case KITCHEN_TYPES = 'kitchenTypes';
-    case APARTMENT_EQUIPMENTS = 'apartmentEquipments';
-    case BUILDING_CONDITION = 'buildingCondition';
-    case BINARY = 'binary'; 
+    case APARTMENT_OWNERSHIP = 'apartment_ownership';
+    case APARTMENT_FURNISHINGS = 'apartment_furnishings';
+    case BUILDING_TYPE = 'building_type';
+    case BUILDING_MATERIAL = 'building_material';
 }

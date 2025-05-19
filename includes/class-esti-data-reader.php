@@ -54,7 +54,7 @@ class Esti_Data_Reader
             return null;
         }
 
-        $decoded_data = json_decode($json_content, true); // true for associative array
+        $decoded_data = json_decode($json_content, true); 
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->log_error("JSON decode error: " . json_last_error_msg() . " for file {$this->file_path}");
