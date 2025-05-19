@@ -111,37 +111,16 @@ class Esti_Main
      */
     private function instantiateObjects(): void
     {
-        // Ensure Enums are loaded if they are in separate files and not autoloaded
-        // require_once plugin_dir_path(__FILE__) . 'enums.php'; // Adjust path if needed
+        $this->dataReader = new Esti_Data_Reader(ESTI_SYNC_DATA_FILE); 
 
-        $this->dataReader = new Esti_Data_Reader(ESTI_SYNC_DATA_FILE); // Assuming ESTI_SYNC_DATA_FILE is defined
-
-        // Check if dictionary loaded successfully before instantiating mapper
         if (empty($this->property_dictionary_data)) {
             error_log('Esti Sync Critical Error: Property dictionary not loaded. Mapper cannot be instantiated.');
-            // You might want to prevent further execution or display a persistent admin error.
-            // For now, this will likely cause issues down the line if other methods expect $this->dataMapper.
-            // A more robust solution would be to halt or throw an exception if dictionary is essential.
-            // $this->dataMapper = new Esti_Data_Mapper([]); // Or pass empty and let mapper handle/error
-            // Forcing an error is better to highlight the missing dictionary.
-            // throw new \Exception("Property dictionary not loaded, cannot instantiate mapper.");
-            // For now, let's proceed with an empty mapper if dict is empty, but this is not ideal
-            // This will cause an error if an empty array is passed and constructor requires non-empty
-            // To avoid the immediate fatal error from the constructor, you *could* pass an empty array,
-            // but the mapper is designed to NEED the dictionary.
-            // So, the proper fix is to ensure $this->property_dictionary_data IS populated.
-            // If it's absolutely critical, you could do:
-            // if (empty($this->property_dictionary_data)) {
-            //     wp_die("Esti Sync Critical Error: Property dictionary failed to load. Plugin cannot function.");
-            // }
-            // For now, to directly address the constructor error, we ensure something is passed.
-            // But the LOGIC of your plugin depends on a VALID dictionary.
-            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data); // THIS IS THE FIX
+            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data); 
         } else {
-            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data); // THIS IS THE FIX
+            $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data); 
         }
 
-        $this->postManager = new Esti_Post_Manager($this->dataMapper); // Pass the instantiated mapper
+        $this->postManager = new Esti_Post_Manager($this->dataMapper); 
         $this->adminPage = new Esti_Admin_Page();
     }
 
@@ -153,9 +132,6 @@ class Esti_Main
     private function registerHooks(): void
     {
         add_action('admin_post_esti_perform_sync', [$this, 'handleSyncAction']);
-        // If Admin Page class adds its own menu, it might be called from there or here.
-        // For example, if Esti_Admin_Page has a setup_menu method:
-        // add_action('admin_menu', [$this->adminPage, 'setup_menu']);
     }
 
     /**
@@ -284,20 +260,20 @@ class Esti_Main
         if (is_wp_error($syncResult)) {
             $results[self::RESULT_ERROR]++;
             $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Error syncing item ID %1$s: %2$s', 'esti-data-sync'), // Added text domain
+                __('Error syncing item ID %1$s: %2$s', 'esti-data-sync'), 
                 esc_html($itemId),
                 esc_html($syncResult->get_error_message())
             );
-        } elseif ($syncResult === $skipped_status_value) { // Use the correct skipped status value
+        } elseif ($syncResult === $skipped_status_value) { 
             $results[self::RESULT_SKIPPED]++;
             $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Item ID %s skipped.', 'esti-data-sync'), // Added text domain
+                __('Item ID %s skipped.', 'esti-data-sync'), 
                 esc_html($itemId)
             );
-        } elseif (is_int($syncResult) && $syncResult > 0) { // Check for valid Post ID
+        } elseif (is_int($syncResult) && $syncResult > 0) { 
             $results[self::RESULT_SUCCESS]++;
             $results[self::RESULT_MESSAGES][] = sprintf(
-                __('Successfully synced item ID %1$s to post ID %2$s.', 'esti-data-sync'), // Added text domain
+                __('Successfully synced item ID %1$s to post ID %2$s.', 'esti-data-sync'), 
                 esc_html($itemId),
                 esc_html($syncResult)
             );
