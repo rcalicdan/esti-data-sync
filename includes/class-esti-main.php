@@ -139,18 +139,214 @@ class Esti_Main
      */
     public function handleSyncAction(): void
     {
+        error_log('Esti Sync: POST data received - ' . print_r($_POST, true));
         $this->verifyPermissions();
         $this->verifyNonce();
 
-        $itemsToProcess = $this->getItemsToProcess();
-        $dataItems = $this->dataReader->get_data($itemsToProcess);
-        $results = $this->processSyncItems($dataItems);
+        // Validate and get sync parameters
+        $syncParams = $this->validateAndGetSyncParams();
+        if (is_wp_error($syncParams)) {
+            $this->redirectWithError($syncParams->get_error_code());
+            return;
+        }
+
+        // Debug: Log sync parameters
+        error_log('Esti Sync: Sync parameters - ' . print_r($syncParams, true));
+
+        // Get data items based on sync mode
+        $dataItems = $this->getDataItems($syncParams);
+        error_log('Esti Sync: Retrieved ' . count($dataItems) . ' items before filtering');
+
+        // Filter out duplicates if requested
+        if ($syncParams['skip_duplicates']) {
+            $originalCount = count($dataItems);
+            $dataItems = $this->filterDuplicates($dataItems);
+            $filteredCount = count($dataItems);
+            error_log("Esti Sync: Filtered duplicates - Original: $originalCount, After filtering: $filteredCount");
+        }
+
+        error_log('Esti Sync: Final item count for processing: ' . count($dataItems));
+
+        $results = $this->processSyncItems($dataItems, $syncParams);
 
         set_transient(self::TRANSIENT_RESULTS_KEY, $results, self::TRANSIENT_EXPIRATION);
 
-        // Make sure the admin page slug is correct
         wp_redirect(admin_url('admin.php?page=esti-data-sync&synced=true'));
         exit;
+    }
+
+    /**
+     * Validate and extract sync parameters from POST data
+     * 
+     * @return array|WP_Error Sync parameters array or WP_Error on validation failure
+     */
+    private function validateAndGetSyncParams()
+    {
+        $sync_mode = sanitize_text_field($_POST['sync_mode'] ?? 'count');
+        $skip_duplicates = isset($_POST['skip_duplicates']) && $_POST['skip_duplicates'] === '1';
+
+        if ($sync_mode === 'range') {
+            $start_index = intval($_POST['start_index'] ?? 0);
+            $end_index = intval($_POST['end_index'] ?? 0);
+
+            if ($start_index > $end_index) {
+                return new WP_Error('invalid_range', 'Start index must be less than or equal to end index.');
+            }
+
+            if ($start_index < 0 || $end_index < 0) {
+                return new WP_Error('invalid_range', 'Indices must be non-negative.');
+            }
+
+            return [
+                'sync_mode' => 'range',
+                'start_index' => $start_index,
+                'end_index' => $end_index,
+                'skip_duplicates' => $skip_duplicates
+            ];
+        } else {
+            $items_to_process = max(0, intval($_POST['items_to_process'] ?? self::DEFAULT_ITEMS_TO_PROCESS));
+
+            return [
+                'sync_mode' => 'count',
+                'items_to_process' => $items_to_process,
+                'skip_duplicates' => $skip_duplicates
+            ];
+        }
+    }
+
+    /**
+     * Get data items based on sync parameters
+     * 
+     * @param array $syncParams Validated sync parameters
+     * @return array Array of data items
+     */
+    private function getDataItems(array $syncParams): array
+    {
+        if ($syncParams['sync_mode'] === 'range') {
+            return $this->dataReader->get_data_by_range(
+                $syncParams['start_index'],
+                $syncParams['end_index']
+            );
+        } else {
+            $limit = $syncParams['items_to_process'] > 0 ? $syncParams['items_to_process'] : null;
+            return $this->dataReader->get_data($limit);
+        }
+    }
+
+    /**
+     * Filter out items that already exist based on portalTitle
+     * 
+     * @param array $dataItems Array of data items to filter
+     * @return array Filtered array with duplicates removed
+     */
+    private function filterDuplicates(array $dataItems): array
+    {
+        $filtered_items = [];
+        $skipped_count = 0;
+        $no_title_count = 0;
+
+        foreach ($dataItems as $index => $item) {
+            if (!isset($item['portalTitle']) || empty($item['portalTitle'])) {
+                // If no portalTitle, include the item (let the sync process handle it)
+                $filtered_items[] = $item;
+                $no_title_count++;
+                error_log("Esti Sync: Item at index $index has no portalTitle, including it");
+                continue;
+            }
+
+            $portal_title = $item['portalTitle'];
+
+            // Check if a post with this title already exists
+            if (!$this->postExistsByTitle($portal_title)) {
+                $filtered_items[] = $item;
+                error_log("Esti Sync: Item '$portal_title' does not exist, including it");
+            } else {
+                $skipped_count++;
+                error_log("Esti Sync: Item '$portal_title' already exists, skipping it");
+            }
+        }
+
+        error_log("Esti Sync: Duplicate filtering summary - Original: " . count($dataItems) . ", Final: " . count($filtered_items) . ", Skipped: $skipped_count, No title: $no_title_count");
+
+        return $filtered_items;
+    }
+
+    /**
+     * Check if a property post exists with the given title
+     * 
+     * @param string $title Title to search for
+     * @return bool True if post exists, false otherwise
+     */
+    private function postExistsByTitle(string $title): bool
+    {
+        // First try exact title match
+        $args = [
+            'post_type' => 'property',
+            'title' => $title,  // WordPress 4.6+ supports 'title' parameter
+            'posts_per_page' => 1,
+            'fields' => 'ids',
+            'post_status' => 'any',
+            'suppress_filters' => true,
+        ];
+
+        $query = new WP_Query($args);
+        $found_by_title = $query->have_posts();
+
+        if ($found_by_title) {
+            error_log("Esti Sync: Found existing post with title: '$title' (using title parameter)");
+            return true;
+        }
+
+        // Fallback: Use meta_query or get_page_by_title as alternative
+        global $wpdb;
+
+        $existing_post = $wpdb->get_var($wpdb->prepare(
+            "SELECT ID FROM {$wpdb->posts} 
+         WHERE post_title = %s 
+         AND post_type = 'property' 
+         AND post_status != 'trash'",
+            $title
+        ));
+
+        if ($existing_post) {
+            error_log("Esti Sync: Found existing post with title: '$title' (using direct query)");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Redirect to admin page with error parameter
+     * 
+     * @param string $error_code Error code to display
+     * @return void
+     */
+    private function redirectWithError(string $error_code): void
+    {
+        wp_redirect(admin_url('admin.php?page=esti-data-sync&error=' . urlencode($error_code)));
+        exit;
+    }
+
+    /**
+     * Get debug information for troubleshooting
+     * 
+     * @return array Debug information
+     */
+    public function get_debug_info(): array
+    {
+        $debug_info = [];
+
+        // Check if ESTI_SYNC_DATA_FILE constant is defined
+        $debug_info['constant_defined'] = defined('ESTI_SYNC_DATA_FILE');
+        $debug_info['file_path'] = defined('ESTI_SYNC_DATA_FILE') ? ESTI_SYNC_DATA_FILE : 'NOT DEFINED';
+
+        // Get data reader debug info
+        if (isset($this->dataReader)) {
+            $debug_info['data_reader'] = $this->dataReader->get_debug_info();
+        }
+
+        return $debug_info;
     }
 
     /**
@@ -195,17 +391,66 @@ class Esti_Main
      * Process the data items for synchronization
      * 
      * @param array $dataItems Array of data items to process
+     * @param array $syncParams Sync parameters for debugging
      * @return array Results of the synchronization process
      */
-    private function processSyncItems(array $dataItems): array
+    private function processSyncItems(array $dataItems, array $syncParams = []): array
     {
         $results = $this->initializeResultsArray();
 
+        // Add debugging information
+        $results[self::RESULT_MESSAGES][] = sprintf(
+            __('Debug: Received %d data items for processing.', 'esti-data-sync'),
+            count($dataItems)
+        );
+
+        // Add sync parameters to debug output
+        if (!empty($syncParams)) {
+            $results[self::RESULT_MESSAGES][] = sprintf(
+                __('Debug: Sync mode: %s', 'esti-data-sync'),
+                $syncParams['sync_mode'] ?? 'unknown'
+            );
+
+            if ($syncParams['sync_mode'] === 'range') {
+                $results[self::RESULT_MESSAGES][] = sprintf(
+                    __('Debug: Range requested: %d to %d', 'esti-data-sync'),
+                    $syncParams['start_index'] ?? 0,
+                    $syncParams['end_index'] ?? 0
+                );
+            } else {
+                $results[self::RESULT_MESSAGES][] = sprintf(
+                    __('Debug: Items to process: %d', 'esti-data-sync'),
+                    $syncParams['items_to_process'] ?? 0
+                );
+            }
+
+            $results[self::RESULT_MESSAGES][] = sprintf(
+                __('Debug: Skip duplicates: %s', 'esti-data-sync'),
+                ($syncParams['skip_duplicates'] ?? false) ? 'Yes' : 'No'
+            );
+        }
+
         if (empty($dataItems)) {
-            $results[self::RESULT_MESSAGES][] = __('No data items found to process or error reading data source.', 'esti-data-sync'); // Added text domain
+            $results[self::RESULT_MESSAGES][] = __('No data items found to process or error reading data source.', 'esti-data-sync');
+
+            // Add more specific debugging
+            $file_exists = file_exists(ESTI_SYNC_DATA_FILE);
+            $results[self::RESULT_MESSAGES][] = sprintf(
+                __('Debug: JSON file exists: %s', 'esti-data-sync'),
+                $file_exists ? 'Yes' : 'No'
+            );
+
+            if ($file_exists) {
+                $results[self::RESULT_MESSAGES][] = sprintf(
+                    __('Debug: JSON file path: %s', 'esti-data-sync'),
+                    ESTI_SYNC_DATA_FILE
+                );
+            }
+
             return $results;
         }
 
+        // Rest of the method remains the same...
         if (!$this->postManager) {
             $results[self::RESULT_MESSAGES][] = __('Error: Post Manager not initialized.', 'esti-data-sync');
             $results[self::RESULT_ERROR] = count($dataItems);
