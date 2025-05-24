@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) {
 class Esti_Sync_Handler
 {
     private const TRANSIENT_RESULTS_KEY = 'esti_sync_results';
-    private const TRANSIENT_EXPIRATION = 60;
+    private const TRANSIENT_EXPIRATION = 360;
 
     private Esti_Data_Reader $dataReader;
     private Esti_Data_Mapper $dataMapper;
     private Esti_Post_Manager $postManager;
     private Esti_Image_Handler $imageHandler;
     private Esti_WordPress_Service $wordPressService;
-    
+
     // Service instances
     private Esti_Sync_Parameter_Service $parameterService;
     private Esti_Duplicate_Filter_Service $duplicateFilterService;
@@ -34,7 +34,7 @@ class Esti_Sync_Handler
         $this->postManager = $postManager;
         $this->imageHandler = $imageHandler;
         $this->wordPressService = $wordPressService;
-        
+
         // Load service dependencies
         $this->loadDependencies();
     }
@@ -43,12 +43,12 @@ class Esti_Sync_Handler
      * Load service service class dependencies
      */
     private function loadDependencies(): void
-    {   
+    {
         // Load service classes
         require_once ESTI_SYNC_PLUGIN_PATH . 'sync-services/esti-sync-parameter-service.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'sync-services/esti-duplicate-filter-service.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'sync-services/esti-sync-results-service.php';
-        
+
         // Initialize service instances
         $this->parameterService = new Esti_Sync_Parameter_Service();
         $this->duplicateFilterService = new Esti_Duplicate_Filter_Service();
@@ -61,7 +61,7 @@ class Esti_Sync_Handler
     public function handleSyncAction(): void
     {
         error_log('Esti Sync: POST data received - ' . print_r($_POST, true));
-        
+
         $this->verifyPermissions();
         $this->verifyNonce();
 
@@ -82,7 +82,15 @@ class Esti_Sync_Handler
             $originalCount = count($dataItems);
             $dataItems = $this->duplicateFilterService->filterDuplicates($dataItems);
             $filteredCount = count($dataItems);
+            $skippedByFilter = $originalCount - $filteredCount;
+
             error_log("Esti Sync: Filtered duplicates - Original: $originalCount, After filtering: $filteredCount");
+
+            $syncParams['duplicate_filter_stats'] = [
+                'original_count' => $originalCount,
+                'after_filter_count' => $filteredCount,
+                'filtered_out_count' => $skippedByFilter
+            ];
         }
 
         error_log('Esti Sync: Final item count for processing: ' . count($dataItems));

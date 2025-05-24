@@ -52,30 +52,97 @@ class Esti_Admin_Page
         global $esti_main;
 
         if (!$esti_main || !method_exists($esti_main, 'get_debug_info')) {
-            return '<div class="notice notice-info"><p>Debug info not available</p></div>';
+            return <<<HTML
+             <div class="notice notice-info">
+                <p>Debug info not available</p>
+             </div>
+            HTML;
         }
 
         $debug = $esti_main->get_debug_info();
+        $debug_items = $this->build_debug_list_items($debug);
 
-        $html = '<div class="notice notice-info">';
-        $html .= '<p><strong>Json Data File Information:</strong></p>';
-        $html .= '<ul>';
+        return <<<HTML
+         <div class="notice notice-info">
+              <p><strong>Json Data File Information:</strong></p>
+              <ul>
+                 {$debug_items}
+              </ul>
+        </div>
+        HTML;
+    }
+
+    /**
+     * Build the debug list items HTML
+     *
+     * @param array $debug Debug data
+     * @return string HTML list items
+     */
+    private function build_debug_list_items(array $debug): string
+    {
+        $items = '';
 
         foreach ($debug as $key => $value) {
             if (is_array($value)) {
-                $html .= '<li><strong>' . esc_html($key) . ':</strong><ul>';
-                foreach ($value as $subkey => $subvalue) {
-                    $html .= '<li>' . esc_html($subkey) . ': ' . esc_html(is_bool($subvalue) ? ($subvalue ? 'true' : 'false') : $subvalue) . '</li>';
-                }
-                $html .= '</ul></li>';
+                $sub_items = $this->build_sub_list_items($value);
+                $escaped_key = esc_html($key);
+
+                $items .= <<<HTML
+                 <li>
+                   <strong>{$escaped_key}:</strong>
+                      <ul>
+                       {$sub_items}
+                     </ul>
+                 </li>
+            HTML;
             } else {
-                $html .= '<li><strong>' . esc_html($key) . ':</strong> ' . esc_html(is_bool($value) ? ($value ? 'true' : 'false') : $value) . '</li>';
+                $escaped_key = esc_html($key);
+                $escaped_value = esc_html($this->format_value($value));
+
+                $items .= <<<HTML
+                    <li><strong>{$escaped_key}:</strong> {$escaped_value}</li>
+                HTML;
             }
         }
 
-        $html .= '</ul></div>';
+        return $items;
+    }
 
-        return $html;
+    /**
+     * Build sub-list items for nested arrays
+     *
+     * @param array $items Array items
+     * @return string HTML sub-list items
+     */
+    private function build_sub_list_items(array $items): string
+    {
+        $sub_items = '';
+
+        foreach ($items as $subkey => $subvalue) {
+            $escaped_subkey = esc_html($subkey);
+            $escaped_subvalue = esc_html($this->format_value($subvalue));
+
+            $sub_items .= <<<HTML
+              <li>{$escaped_subkey}: {$escaped_subvalue}</li>
+            HTML;
+        }
+
+        return $sub_items;
+    }
+
+    /**
+     * Format value for display (handles boolean conversion)
+     *
+     * @param mixed $value Value to format
+     * @return string Formatted value
+     */
+    private function format_value($value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        return (string) $value;
     }
 
     /**
@@ -208,8 +275,8 @@ class Esti_Admin_Page
             <p><strong>{$this->translate('Sync Results:')}</strong></p>
             <ul>
                 <li>{$this->translate_with_count('Successfully synced: %d',$results['success'])}</li>
-                <li>{$this->translate_with_count('Skipped: %d',$results['skipped'])}</li>
-                <li>{$this->translate_with_count('Errors: %d',$results['error'])}</li>
+                <!-- <li>{$this->translate_with_count('Skipped: %d',$results['skipped'])}</li>
+                <li>{$this->translate_with_count('Errors: %d',$results['error'])}</li> -->
             </ul>
             {$messages_html}
         </div>

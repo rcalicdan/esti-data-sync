@@ -41,6 +41,7 @@ class Esti_Sync_Results_Service
 
         if (!empty($syncParams)) {
             $results = $this->addSyncParameterMessages($results, $syncParams);
+            $results = $this->addDuplicateFilterStats($results, $syncParams);
         }
 
         return $results;
@@ -73,6 +74,31 @@ class Esti_Sync_Results_Service
             __('Debug: Skip duplicates: %s', 'esti-data-sync'),
             ($syncParams['skip_duplicates'] ?? false) ? 'Yes' : 'No'
         );
+
+        return $results;
+    }
+
+    /**
+     * Add duplicate filtering statistics to debug messages
+     */
+    private function addDuplicateFilterStats(array $results, array $syncParams): array
+    {
+        if (isset($syncParams['duplicate_filter_stats'])) {
+            $stats = $syncParams['duplicate_filter_stats'];
+            $results[self::RESULT_MESSAGES][] = sprintf(
+                __('Duplicate Filter: %d items retrieved, %d after filtering, %d filtered out as duplicates', 'esti-data-sync'),
+                $stats['original_count'],
+                $stats['after_filter_count'],
+                $stats['filtered_out_count']
+            );
+            
+            if ($stats['filtered_out_count'] > 0) {
+                $results[self::RESULT_MESSAGES][] = sprintf(
+                    __('Note: %d duplicate items were removed before processing (based on portalTitle)', 'esti-data-sync'),
+                    $stats['filtered_out_count']
+                );
+            }
+        }
 
         return $results;
     }
@@ -128,7 +154,7 @@ class Esti_Sync_Results_Service
             self::RESULT_MESSAGES => [
                 ...$results[self::RESULT_MESSAGES],
                 sprintf(
-                    __('Item ID %s skipped.', 'esti-data-sync'),
+                    __('Item ID %s skipped during sync processing.', 'esti-data-sync'),
                     esc_html($itemId)
                 )
             ]

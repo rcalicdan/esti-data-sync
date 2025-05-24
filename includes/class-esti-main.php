@@ -134,10 +134,6 @@ class Esti_Main
     {
         $debug_info = [];
 
-        // Check if ESTI_SYNC_DATA_FILE constant is defined
-        $debug_info['constant_defined'] = defined('ESTI_SYNC_DATA_FILE');
-        $debug_info['file_path'] = defined('ESTI_SYNC_DATA_FILE') ? ESTI_SYNC_DATA_FILE : 'NOT DEFINED';
-
         // Get data reader debug info
         if (isset($this->dataReader)) {
             $debug_info['data_reader'] = $this->dataReader->get_debug_info();
