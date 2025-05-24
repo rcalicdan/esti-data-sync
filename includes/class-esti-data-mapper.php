@@ -73,7 +73,7 @@ class Esti_Data_Mapper
         $this->property_details_meta_mapper->map_room_counts($mapped['meta_input'], $item_data);
         $this->property_details_meta_mapper->map_building_details($mapped['meta_input'], $item_data);
         $this->property_details_meta_mapper->map_garage_info($mapped['meta_input'], $item_data);
-        $this->property_details_meta_mapper->map_featured_property($mapped['meta_input'], $item_data);
+        // $this->property_details_meta_mapper->map_featured_property($mapped['meta_input'], $item_data);
         $this->address_meta_mapper->map($mapped, $item_data);
         $this->agent_info_mapper->map($mapped, $item_data);
         $this->features_meta_mapper->map($mapped, $item_data);

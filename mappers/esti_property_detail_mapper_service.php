@@ -19,10 +19,7 @@ class Esti_Property_Details_Meta_Mapper_Service
         $meta[HouzezMetaKey::JSON_ID->value] = $this->sanitizer->s_int($item_data['id'] ?? 0);
         $meta[HouzezMetaKey::PROPERTY_ID->value] = $this->sanitizer->s_text($item_data['number'] ?? ($item_data['id'] ?? ''));
         
-        // Default values that were originally in _map_meta_input
-        $meta[HouzezMetaKey::HOMESLIDER->value] = 'no'; // Default for Houzez theme
-        // AGENT_DISPLAY_OPTION is generally handled by AgentInfoMapperService,
-        // but can have a base default here if needed before agent mapping.
+        $meta[HouzezMetaKey::HOMESLIDER->value] = 'no'; 
         // $meta[HouzezMetaKey::AGENT_DISPLAY_OPTION->value] = 'agent_info';
     }
 

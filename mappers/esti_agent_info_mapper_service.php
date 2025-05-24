@@ -22,7 +22,7 @@ class Esti_Agent_Info_Mapper_Service
         }
 
         $contact_id = $this->sanitizer->s_int($item_data['contactId']);
-        $meta[HouzezMetaKey::AGENT_DISPLAY_OPTION->value] = 'agency_info'; 
+        $meta[HouzezMetaKey::AGENT_DISPLAY_OPTION->value] = 'agency_info';
         $wp_agency_id = $this->_get_wp_agency_id($contact_id);
 
         if ($wp_agency_id) {
@@ -38,14 +38,14 @@ class Esti_Agent_Info_Mapper_Service
         }
 
         $contact_name = '';
-        
+
         if (!empty($item_data['contactFirstname'])) {
             $contact_name = $this->sanitizer->s_text($item_data['contactFirstname']);
             if (!empty($item_data['contactLastname'])) {
                 $contact_name .= ' ' . $this->sanitizer->s_text($item_data['contactLastname']);
             }
-        } elseif (!empty($item_data['contactLastname'])) { 
-             $contact_name = $this->sanitizer->s_text($item_data['contactLastname']);
+        } elseif (!empty($item_data['contactLastname'])) {
+            $contact_name = $this->sanitizer->s_text($item_data['contactLastname']);
         }
 
 
@@ -58,6 +58,13 @@ class Esti_Agent_Info_Mapper_Service
     {
         $contact_to_agency_map = [
             145581 => 2792,
+            136583 => 2792,
+            147224 => 2792,
+            130235 => 2792,
+            145584 => 2792,
+            80793 => 2792,
+            79629 => 2792,
+            120476 => 2792
         ];
 
         return $contact_to_agency_map[$external_contact_id] ?? null;

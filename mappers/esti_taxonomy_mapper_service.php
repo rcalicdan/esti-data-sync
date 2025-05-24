@@ -76,9 +76,9 @@ class Esti_Taxonomy_Mapper_Service
         $labels = [];
 
         $label_flags = [
-            'labelNew' => ['value' => JsonFeedCode::LABEL_NEW->value, 'label' => __('New', 'your-text-domain')],
-            'labelSold' => ['value' => JsonFeedCode::LABEL_SOLD->value, 'label' => __('Sold', 'your-text-domain')],
-            'labelReserved' => ['value' => JsonFeedCode::LABEL_RESERVED->value, 'label' => __('Reserved', 'your-text-domain')]
+            'labelNew' => ['value' => JsonFeedCode::LABEL_NEW->value, 'label' => __('Nowe', 'your-text-domain')],
+            // 'labelSold' => ['value' => JsonFeedCode::LABEL_SOLD->value, 'label' => __('Sold', 'your-text-domain')],
+            // 'labelReserved' => ['value' => JsonFeedCode::LABEL_RESERVED->value, 'label' => __('Reserved', 'your-text-domain')]
         ];
 
         foreach ($label_flags as $key => $info) {
@@ -87,21 +87,21 @@ class Esti_Taxonomy_Mapper_Service
             }
         }
 
-        // Market type from dictionary
-        if (isset($item_data['market'])) {
-            $market_name = $this->dictionary_service->get_dict_value(DictionaryKey::MARKET, $item_data['market']);
-            if ($market_name && strtolower($market_name) !== 'dowolny' && strtolower($market_name) !== 'any') {
-                $labels[] = $market_name;
-            }
-        }
+        // // Market type from dictionary
+        // if (isset($item_data['market'])) {
+        //     $market_name = $this->dictionary_service->get_dict_value(DictionaryKey::MARKET, $item_data['market']);
+        //     if ($market_name && strtolower($market_name) !== 'dowolny' && strtolower($market_name) !== 'any') {
+        //         $labels[] = $market_name;
+        //     }
+        // }
 
-        // Check if property is marked as featured in meta_input
-        if (
-            isset($mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value]) &&
-            $mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value] === '1'
-        ) {
-            $labels[] = __('Featured', 'your-text-domain');
-        }
+        // // Check if property is marked as featured in meta_input
+        // if (
+        //     isset($mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value]) &&
+        //     $mapped['meta_input'][HouzezMetaKey::FEATURED_PROPERTY->value] === '1'
+        // ) {
+        //     $labels[] = __('Featured', 'your-text-domain');
+        // }
 
         if (!empty($labels)) {
             $mapped['tax_input'][HouzezTaxonomy::LABEL->value] = array_unique($labels);
