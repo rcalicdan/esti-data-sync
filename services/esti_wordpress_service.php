@@ -10,6 +10,30 @@ if (!defined('ABSPATH')) {
 class Esti_WordPress_Service
 {
     /**
+     * Creates an attachment in the WordPress media library.
+     * 
+     * @param array  $attachment Array of attachment data.
+     * @param string $file      Optional. Path to the file on the server. Default false.
+     * @param int    $parent    Optional. Post ID to associate attachment with. Default 0.
+     */
+    public function wpUploadDir()
+    {
+        return wp_upload_dir();
+    }
+
+    /**
+     * Creates an attachment in the WordPress media library.
+     *
+     * @param array  $attachment Array of attachment data.
+     * @param string $file      Optional. Path to the file on the server. Default false.
+     * @param int    $parent    Optional. Post ID to associate attachment with. Default 0.
+     */
+    public function wpInsertAttachment($attachment, $file = false, $parent = 0)
+    {
+        return wp_insert_attachment($attachment, $file, $parent);
+    }
+
+    /**
      * Ensures WordPress media functions are loaded.
      * Call this before using media-related functions if not in admin context.
      */
@@ -172,7 +196,7 @@ class Esti_WordPress_Service
      */
     public function getAttachedFile(int $attachment_id, bool $unfiltered = false)
     {
-        $this->ensureMediaFunctionsExist(); 
+        $this->ensureMediaFunctionsExist();
         return get_attached_file($attachment_id, $unfiltered);
     }
 

@@ -21,6 +21,7 @@ class Esti_Main
     private Esti_Data_Reader $dataReader;
     private Esti_Data_Mapper $dataMapper;
     private Esti_Post_Manager $postManager;
+    private Esti_Image_Handler $imageHandler;
     private Esti_WordPress_Service $wordPressService;
     private Esti_Admin_Page $adminPage;
     private array $property_dictionary_data = [];
@@ -109,6 +110,7 @@ class Esti_Main
     {
         $this->dataReader = new Esti_Data_Reader(ESTI_SYNC_DATA_FILE);
         $this->wordPressService = new Esti_WordPress_Service();
+        $this->imageHandler = new Esti_Image_Handler($this->wordPressService);
 
         if (empty($this->property_dictionary_data)) {
             $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data);
@@ -116,7 +118,7 @@ class Esti_Main
             $this->dataMapper = new Esti_Data_Mapper($this->property_dictionary_data);
         }
 
-        $this->postManager = new Esti_Post_Manager($this->dataMapper, $this->wordPressService);
+        $this->postManager = new Esti_Post_Manager($this->dataMapper, $this->wordPressService, $this->imageHandler);
         $this->adminPage = new Esti_Admin_Page();
     }
 
