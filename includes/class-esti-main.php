@@ -15,6 +15,7 @@ class Esti_Main
     private Esti_WordPress_Service $wordPressService;
     private Esti_Admin_Page $adminPage;
     private Esti_Sync_Handler $syncHandler;
+    private Esti_Cron_Manager $cronManager;
     private array $property_dictionary_data = [];
 
     /**
@@ -84,6 +85,8 @@ class Esti_Main
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/SyncStatus.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'services/esti_wordpress_service.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'includes/class-esti-sync-handler.php';
+        require_once ESTI_SYNC_PLUGIN_PATH. 'includes/class-esti-cron-manager.php';
+        require_once ESTI_SYNC_PLUGIN_PATH. 'includes/class-esti-cron-schedule.php';
 
         if (!function_exists('media_handle_upload')) {
             require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -113,7 +116,11 @@ class Esti_Main
             $this->imageHandler,
             $this->wordPressService
         );
+
+        $this->cronManager = new Esti_Cron_Manager($this->dataReader, $this->postManager);
+        new Esti_Cron_Schedules();
     }
+
 
     /**
      * Register WordPress action hooks
@@ -123,6 +130,11 @@ class Esti_Main
     private function registerHooks(): void
     {
         add_action('admin_post_esti_perform_sync', [$this->syncHandler, 'handleSyncAction']);
+        $this->cronManager->init();
+        // Add cron-related admin actions
+        add_action('admin_post_esti_update_cron_settings', [$this, 'handleCronSettingsUpdate']);
+        add_action('admin_post_esti_trigger_manual_sync', [$this, 'handleManualSync']);
+        add_action('admin_post_esti_clear_cron_logs', [$this, 'handleClearLogs']);
     }
 
     /**
@@ -140,5 +152,57 @@ class Esti_Main
         }
 
         return $debug_info;
+    }
+
+    public function handleCronSettingsUpdate(): void
+    {
+        if (
+            !current_user_can('manage_options') ||
+            !wp_verify_nonce($_POST['esti_cron_settings_nonce'], 'esti_cron_settings')
+        ) {
+            wp_die(__('Access denied', 'esti-data-sync'));
+        }
+
+        $settings = [
+            'enabled' => !empty($_POST['cron_enabled']),
+            'frequency' => sanitize_text_field($_POST['cron_frequency'] ?? 'hourly'),
+            'batch_size' => (int)($_POST['cron_batch_size'] ?? 10),
+            'skip_duplicates' => !empty($_POST['cron_skip_duplicates']),
+        ];
+
+        $this->cronManager->updateCronSettings($settings);
+
+        wp_redirect(admin_url('admin.php?page=esti-data-sync&cron_updated=true'));
+        exit;
+    }
+
+    public function handleManualSync(): void
+    {
+        if (
+            !current_user_can('manage_options') ||
+            !wp_verify_nonce($_POST['esti_manual_sync_nonce'], 'esti_manual_sync')
+        ) {
+            wp_die(__('Access denied', 'esti-data-sync'));
+        }
+
+        $this->cronManager->triggerManualSync();
+
+        wp_redirect(admin_url('admin.php?page=esti-data-sync&manual_sync=true'));
+        exit;
+    }
+
+    public function handleClearLogs(): void
+    {
+        if (
+            !current_user_can('manage_options') ||
+            !wp_verify_nonce($_POST['esti_clear_logs_nonce'], 'esti_clear_logs')
+        ) {
+            wp_die(__('Access denied', 'esti-data-sync'));
+        }
+
+        $this->cronManager->clearLogs();
+
+        wp_redirect(admin_url('admin.php?page=esti-data-sync&logs_cleared=true'));
+        exit;
     }
 }

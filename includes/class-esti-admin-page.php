@@ -146,12 +146,179 @@ class Esti_Admin_Page
     }
 
     /**
-     * Render the admin page content
+     * Render cron settings section
+     */
+    private function renderCronSettings(): string
+    {
+        global $esti_main;
+
+        if (!$esti_main || !isset($esti_main->cronManager)) {
+            return '<p>Cron manager not available</p>';
+        }
+
+        $cronManager = $esti_main->cronManager;
+        $settings = $cronManager->getCronSettings();
+        $frequencies = $cronManager->getAvailableFrequencies();
+        $nextRun = $cronManager->getNextScheduledRun();
+        $logs = $cronManager->getLogs(10);
+
+        $nextRunText = $nextRun ?
+            wp_date(get_option('date_format') . ' ' . get_option('time_format'), $nextRun) :
+            __('Not scheduled', 'esti-data-sync');
+
+        $enabledChecked = $settings['enabled'] ? 'checked' : '';
+
+        $html = <<<HTML
+    <div class="wrap">
+        <h2>{$this->translate('Automatic Sync Settings')}</h2>
+        
+        <form method="post" action="{$this->get_admin_post_url()}">
+            <input type="hidden" name="action" value="esti_update_cron_settings">
+            {$this->get_nonce_field('esti_cron_settings')}
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row">{$this->translate('Enable Auto Sync')}</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="cron_enabled" value="1" {$enabledChecked}>
+                            {$this->translate('Enable automatic synchronization')}
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">{$this->translate('Sync Frequency')}</th>
+                    <td>
+                        <select name="cron_frequency">
+    HTML;
+
+        foreach ($frequencies as $key => $label) {
+            $selected = ($settings['frequency'] === $key) ? 'selected' : '';
+            $html .= "<option value=\"{$key}\" {$selected}>{$label}</option>";
+        }
+
+        $html .= <<<HTML
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">{$this->translate('Batch Size')}</th>
+                    <td>
+                        <input type="number" name="cron_batch_size" value="{$settings['batch_size']}" min="1" max="100">
+                        <p class="description">{$this->translate('Number of items to process per cron run')}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">{$this->translate('Skip Duplicates')}</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="cron_skip_duplicates" value="1" {$this->getChecked($settings['skip_duplicates'])}>
+                            {$this->translate('Skip duplicate entries during auto sync')}
+                        </label>
+                    </td>
+                </tr>
+            </table>
+            
+            {$this->get_submit_button(__('Save Cron Settings', 'esti-data-sync'))}
+        </form>
+        
+        <h3>{$this->translate('Cron Status')}</h3>
+        <table class="widefat">
+            <tr>
+                <td><strong>{$this->translate('Status')}:</strong></td>
+                <td>{$this->getCronStatusText($settings['enabled'])}</td>
+            </tr>
+            <tr>
+                <td><strong>{$this->translate('Next Run')}:</strong></td>
+                <td>{$nextRunText}</td>
+            </tr>
+        </table>
+        
+        <h3>{$this->translate('Manual Actions')}</h3>
+        <form method="post" action="{$this->get_admin_post_url()}" style="display: inline;">
+            <input type="hidden" name="action" value="esti_trigger_manual_sync">
+            {$this->get_nonce_field('esti_manual_sync')}
+            <input type="submit" class="button" value="{$this->translate('Run Sync Now')}" 
+                   onclick="return confirm('{$this->translate('Are you sure you want to run sync now?')}');">
+        </form>
+        
+        <form method="post" action="{$this->get_admin_post_url()}" style="display: inline; margin-left: 10px;">
+            <input type="hidden" name="action" value="esti_clear_cron_logs">
+            {$this->get_nonce_field('esti_clear_logs')}
+            <input type="submit" class="button" value="{$this->translate('Clear Logs')}">
+        </form>
+        
+        <h3>{$this->translate('Recent Logs')}</h3>
+        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
+    HTML;
+
+        if (!empty($logs)) {
+            foreach (array_reverse($logs) as $log) {
+                $levelClass = $log['level'] === 'error' ? 'color: red;' : '';
+                $html .= "<p style=\"margin: 5px 0; {$levelClass}\"><strong>[{$log['timestamp']}]</strong> {$log['message']}</p>";
+            }
+        } else {
+            $html .= "<p>{$this->translate('No logs available')}</p>";
+        }
+
+        $html .= <<<HTML
+        </div>
+    </div>
+    HTML;
+
+        return $html;
+    }
+
+    private function getChecked(bool $condition): string
+    {
+        return $condition ? 'checked' : '';
+    }
+
+    private function getCronStatusText(bool $enabled): string
+    {
+        return $enabled ?
+            '<span style="color: green;">' . $this->translate('Enabled') . '</span>' :
+            '<span style="color: red;">' . $this->translate('Disabled') . '</span>';
+    }
+
+    /**
+     * Render the admin page
+     */
+    public function render_admin_page(): void
+    {
+        $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'sync';
+        $page_title = $this->translate('Esti Data Synchronizer');
+        $manual_sync_label = $this->translate('Manual Sync');
+        $auto_sync_label = $this->translate('Auto Sync');
+        $sync_active_class = $current_tab === 'sync' ? 'nav-tab-active' : '';
+        $cron_active_class = $current_tab === 'cron' ? 'nav-tab-active' : '';
+
+        echo <<<HTML
+        <div class="wrap">
+           <h1>{$page_title}</h1>
+        
+        <h2 class="nav-tab-wrapper">
+            <a href="?page=esti-data-sync&tab=sync" class="nav-tab {$sync_active_class}">{$manual_sync_label}</a>
+            <a href="?page=esti-data-sync&tab=cron" class="nav-tab {$cron_active_class}">{$auto_sync_label}</a>
+        </h2>
+    HTML;
+
+        if ($current_tab === 'cron') {
+            echo $this->renderCronSettings();
+        } else {
+            $this->renderManualSyncTab();
+        }
+
+        echo '</div>';
+    }
+
+    /**
+     * Render the manual sync tab content
      *
      * @since 1.0.0
      * @return void
      */
-    public function render_admin_page()
+    public function renderManualSyncTab()
     {
         $sync_results_html = $this->get_sync_results_html();
         $error_message = $this->get_error_message();
