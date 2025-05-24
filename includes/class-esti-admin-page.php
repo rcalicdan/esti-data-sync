@@ -131,19 +131,25 @@ class Esti_Admin_Page
     }
 
     /**
-     * Format value for display (handles boolean conversion)
+     * Format value for display (handles boolean & array conversion)
      *
      * @param mixed $value Value to format
      * @return string Formatted value
      */
     private function format_value($value): string
     {
+
+        if (is_array($value)) {
+            return implode(', ', $value);
+        }
+
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
         }
 
         return (string) $value;
     }
+
 
     /**
      * Render cron settings section
@@ -152,11 +158,11 @@ class Esti_Admin_Page
     {
         global $esti_main;
 
-        if (!$esti_main || !isset($esti_main->cronManager)) {
+        if (!$esti_main || !method_exists($esti_main, 'getCronManager')) {
             return '<p>Cron manager not available</p>';
         }
 
-        $cronManager = $esti_main->cronManager;
+        $cronManager = $esti_main->getCronManager();
         $settings = $cronManager->getCronSettings();
         $frequencies = $cronManager->getAvailableFrequencies();
         $nextRun = $cronManager->getNextScheduledRun();

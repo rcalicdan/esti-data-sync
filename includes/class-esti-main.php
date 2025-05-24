@@ -32,6 +32,16 @@ class Esti_Main
     }
 
     /**
+     * Get the data reader instance
+     * 
+     * @return Esti_Data_Reader
+     */
+    public function getCronManager(): Esti_Cron_Manager
+    {
+        return $this->cronManager;
+    }
+
+    /**
      * Loads and decodes the property data dictionary from a local JSON file.
      */
     private function load_property_dictionary(): void
@@ -85,8 +95,8 @@ class Esti_Main
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/SyncStatus.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'services/esti_wordpress_service.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'includes/class-esti-sync-handler.php';
-        require_once ESTI_SYNC_PLUGIN_PATH. 'includes/class-esti-cron-manager.php';
-        require_once ESTI_SYNC_PLUGIN_PATH. 'includes/class-esti-cron-schedule.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'includes/class-esti-cron-manager.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'includes/class-esti-cron-schedule.php';
 
         if (!function_exists('media_handle_upload')) {
             require_once ABSPATH . 'wp-admin/includes/image.php';
