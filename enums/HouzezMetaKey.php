@@ -44,6 +44,7 @@ enum HouzezMetaKey: string
 
         // Agents
     case AGENT_DISPLAY_OPTION = 'fave_agent_display_option';
+    case PROPERTY_AGENCY = 'fave_property_agency';
     case AGENTS = 'fave_agents';
 
         // Other Houzez specific

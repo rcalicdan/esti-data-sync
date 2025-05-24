@@ -91,7 +91,7 @@ class Esti_Main
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/JsonFeedCode.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/PostManagerMetaKeys.php';
         require_once ESTI_SYNC_PLUGIN_PATH . 'enums/SyncStatus.php';
-        require_once ESTI_SYNC_DATA_FILE . 'services/esti_wordpress_service.php';
+        require_once ESTI_SYNC_PLUGIN_PATH . 'services/esti_wordpress_service.php';
 
         if (!function_exists('media_handle_upload')) {
             require_once ABSPATH . 'wp-admin/includes/image.php';
