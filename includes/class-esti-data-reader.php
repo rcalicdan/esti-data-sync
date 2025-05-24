@@ -61,17 +61,17 @@ class Esti_Data_Reader
 
         $total_items = count($items);
         error_log("Esti Data Reader: Total items available: $total_items, requested range: $start_index to $end_index");
-        
+
         // Ensure indices don't exceed array bounds
         $start_index = min($start_index, $total_items - 1);
         $end_index = min($end_index, $total_items - 1);
-        
+
         // Calculate length for array_slice (end_index is inclusive)
         $length = $end_index - $start_index + 1;
-        
+
         $result = array_slice($items, $start_index, $length);
         error_log("Esti Data Reader: Returning " . count($result) . " items from range");
-        
+
         return $result;
     }
 
@@ -122,30 +122,61 @@ class Esti_Data_Reader
      */
     public function get_debug_info(): array
     {
-        $info = [
+        $info = $this->get_basic_file_info();
+
+        if (!$info['file_exists'] || !$info['file_readable']) {
+            return $info;
+        }
+
+        $content = file_get_contents($this->file_path);
+        
+        if ($content === false) {
+            return $info;
+        }
+
+        $info['content_length'] = strlen($content);
+        $decoded = json_decode($content, true);
+        $info['json_valid'] = json_last_error() === JSON_ERROR_NONE;
+        $info['json_error'] = json_last_error_msg();
+
+        if ($info['json_valid']) {
+            $info = array_merge($info, $this->get_json_structure_info($decoded));
+        }
+
+        return $info;
+    }
+
+    /**
+     * Get basic file system information
+     * 
+     * @return array Basic file info
+     */
+    private function get_basic_file_info(): array
+    {
+        return [
             'file_path' => $this->file_path,
             'file_exists' => file_exists($this->file_path),
             'file_readable' => is_readable($this->file_path),
             'file_size' => file_exists($this->file_path) ? filesize($this->file_path) : 0,
         ];
+    }
 
-        if ($info['file_exists'] && $info['file_readable']) {
-            $content = file_get_contents($this->file_path);
-            if ($content !== false) {
-                $info['content_length'] = strlen($content);
-                $decoded = json_decode($content, true);
-                $info['json_valid'] = json_last_error() === JSON_ERROR_NONE;
-                $info['json_error'] = json_last_error_msg();
-                
-                if ($info['json_valid']) {
-                    $info['has_data_key'] = isset($decoded['data']);
-                    $info['data_is_array'] = isset($decoded['data']) && is_array($decoded['data']);
-                    $info['data_count'] = isset($decoded['data']) && is_array($decoded['data']) ? count($decoded['data']) : 0;
-                    $info['root_keys'] = array_keys($decoded);
-                }
-            }
-        }
+    /**
+     * Get JSON structure information
+     * 
+     * @param array $decoded Decoded JSON data
+     * @return array JSON structure info
+     */
+    private function get_json_structure_info(array $decoded): array
+    {
+        $hasDataKey = isset($decoded['data']);
+        $dataIsArray = $hasDataKey && is_array($decoded['data']);
 
-        return $info;
+        return [
+            'has_data_key' => $hasDataKey,
+            'data_is_array' => $dataIsArray,
+            'data_count' => $dataIsArray ? count($decoded['data']) : 0,
+            'root_keys' => array_keys($decoded),
+        ];
     }
 }
